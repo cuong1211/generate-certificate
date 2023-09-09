@@ -19,3 +19,5 @@ Route::get('/', function () {
 });
 Route::get('/generate-certificate', [CertificateController::class, 'index'])->name('gen.form');
 Route::post('/generate-certificate', [CertificateController::class,'generate'])->name('gen.cert');
+Route::get('/certificate-report/{cn}', [CertificateController::class,'report'])->name('cert.report');
+Route::get('/certificate-download/{cn}', [CertificateController::class,'downloadCertificate'])->name('cert.download');

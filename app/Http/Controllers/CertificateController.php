@@ -11,6 +11,10 @@ class CertificateController extends Controller
     {
         return view('form');
     }
+    public function report($cn)
+    {
+        return view('report', compact('cn'));
+    }
 
     public function generate(Request $request)
     {
@@ -45,13 +49,34 @@ class CertificateController extends Controller
         exec("openssl x509 -req -in $tmpdir/client.csr -CA $public_path -CAkey $public_path_key -CAcreateserial -out $certfile");
         // Lưu trữ chứng thực và khóa riêng
         // dd($certfile);
-        Storage::put('certificates/' . $cn . '.crt', file_get_contents($certfile));
-        Storage::put('certificates/' . $cn . '.key', file_get_contents($keyfile));
+        Storage::put('certificates/'.$cn.'/' . $cn . '.crt', file_get_contents($certfile));
+        Storage::put('certificates/'.$cn.'/' . $cn . '.key', file_get_contents($keyfile));
 
         // Xóa thư mục tạm thời
         array_map('unlink', glob("$tmpdir/*"));
         rmdir($tmpdir);
 
-        return "Chứng thực đã được tạo và lưu trữ.";
+        return redirect()->route('cert.report', ['cn' => $cn]);
+    }
+    public function downloadCertificate($cn)
+    {
+        // Lấy đường dẫn tới tệp chứng thực đã tạo
+        $certificatePath = storage_path("app/certificates/{$cn}/{$cn}.crt");
+
+        // Kiểm tra xem tệp chứng thực có tồn tại không
+        if (file_exists($certificatePath)) {
+            // Tạo tên tệp xuất khẩu
+            $exportedFileName = "{$cn}.crt";
+
+            // Thiết lập các header để tải xuống tệp
+            header("Content-Disposition: attachment; filename={$exportedFileName}");
+            header("Content-Type: application/x-x509-ca-cert");
+
+            // Đọc và trả về nội dung của tệp chứng thực
+            return response(file_get_contents($certificatePath), 200);
+        } else {
+            // Xử lý tệp chứng thực không tồn tại
+            return abort(404);
+        }
     }
 }
